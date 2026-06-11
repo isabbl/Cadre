@@ -21,7 +21,7 @@ export default function EditTemplatePage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [content, setContent] = useState("");
-  const [variables, setVariables] = useState<{ name: string; type: string }[]>([]);
+  const [variables, setVariables] = useState<{ name: string; type: string; optional?: boolean }[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notFound, setNotFound] = useState(false);
@@ -56,6 +56,10 @@ export default function EditTemplatePage() {
 
   function updateVariableType(index: number, type: string) {
     setVariables((prev) => prev.map((v, i) => (i === index ? { ...v, type } : v)));
+  }
+
+  function toggleOptional(index: number) {
+    setVariables((prev) => prev.map((v, i) => (i === index ? { ...v, optional: !v.optional } : v)));
   }
 
   async function save() {
@@ -192,15 +196,28 @@ export default function EditTemplatePage() {
                       <span className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" />
                       <code className="text-sm font-mono text-slate-700">{`{{${v.name}}}`}</code>
                     </div>
-                    <select
-                      value={v.type}
-                      onChange={(e) => updateVariableType(i, e.target.value)}
-                      className="border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                    >
-                      {Object.entries(TYPE_LABELS).map(([val, label]) => (
-                        <option key={val} value={val}>{label}</option>
-                      ))}
-                    </select>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleOptional(i)}
+                        className={`text-xs px-2.5 py-1 rounded-lg border font-medium transition-colors ${
+                          v.optional
+                            ? "bg-amber-50 border-amber-200 text-amber-700"
+                            : "bg-slate-50 border-slate-200 text-slate-400 hover:text-slate-600"
+                        }`}
+                      >
+                        {v.optional ? "Opcional" : "Obrigatório"}
+                      </button>
+                      <select
+                        value={v.type}
+                        onChange={(e) => updateVariableType(i, e.target.value)}
+                        className="border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      >
+                        {Object.entries(TYPE_LABELS).map(([val, label]) => (
+                          <option key={val} value={val}>{label}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 ))}
               </div>

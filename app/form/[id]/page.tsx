@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { getTemplate, createResponse, getCompany } from "@/lib/firestore";
 
-type Variable = { name: string; type: string };
+type Variable = { name: string; type: string; optional?: boolean };
 type Template = {
   id: string;
   title: string;
@@ -65,6 +65,7 @@ export default function FormPage() {
   function renderInput(v: Variable) {
     const base =
       "mt-1.5 w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder:text-slate-300";
+    const req = !v.optional;
 
     switch (v.type) {
       case "numero":
@@ -74,7 +75,7 @@ export default function FormPage() {
             placeholder="0"
             onChange={(e) => handleChange(v.name, e.target.value)}
             className={base}
-            required
+            required={req}
           />
         );
       case "data":
@@ -83,7 +84,7 @@ export default function FormPage() {
             type="date"
             onChange={(e) => handleChange(v.name, e.target.value)}
             className={base}
-            required
+            required={req}
           />
         );
       case "moeda":
@@ -96,7 +97,7 @@ export default function FormPage() {
               placeholder="0,00"
               onChange={(e) => handleChange(v.name, e.target.value)}
               className="flex-1 border border-slate-200 rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder:text-slate-300"
-              required
+              required={req}
             />
           </div>
         );
@@ -104,10 +105,10 @@ export default function FormPage() {
         return (
           <input
             type="text"
-            placeholder={`Digite aqui...`}
+            placeholder="Digite aqui..."
             onChange={(e) => handleChange(v.name, e.target.value)}
             className={base}
-            required
+            required={req}
           />
         );
     }
@@ -190,7 +191,10 @@ export default function FormPage() {
                   <div key={v.name}>
                     <label className="text-sm font-semibold text-slate-700 block">
                       {v.name}
-                      <span className="text-red-400 ml-0.5">*</span>
+                      {v.optional
+                        ? <span className="text-slate-400 font-normal text-xs ml-1.5">(opcional)</span>
+                        : <span className="text-red-400 ml-0.5">*</span>
+                      }
                     </label>
                     {renderInput(v)}
                   </div>

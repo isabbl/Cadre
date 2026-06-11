@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import ProtectedPage from "@/components/ProtectedPage";
 import { useAuth } from "@/contexts/AuthContext";
-import { getResponses, getTemplates } from "@/lib/firestore";
+import { getResponses, getTemplates, deleteResponse } from "@/lib/firestore";
 
 type ResponseItem = {
   id: string;
@@ -56,6 +56,12 @@ export default function ResponsesPage() {
     navigator.clipboard.writeText(fillTemplate(tpl.content, r.answers));
     setCopiedId(r.id);
     setTimeout(() => setCopiedId(null), 2000);
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Apagar esta resposta?")) return;
+    await deleteResponse(id);
+    setResponses((prev) => prev.filter((r) => r.id !== id));
   }
 
   function handlePrint(r: ResponseItem) {
@@ -176,6 +182,12 @@ export default function ResponsesPage() {
                         </button>
                       </>
                     )}
+                    <button
+                      onClick={() => handleDelete(r.id)}
+                      className="text-xs font-medium text-red-400 hover:text-red-600 border border-red-100 hover:border-red-200 hover:bg-red-50 px-2.5 py-1 rounded-lg transition-colors bg-white"
+                    >
+                      Apagar
+                    </button>
                   </div>
                 </div>
 

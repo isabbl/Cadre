@@ -77,9 +77,19 @@ export default function Sidebar() {
     <aside className="fixed left-0 top-0 h-screen w-60 bg-slate-900 border-r border-white/5 flex flex-col z-40">
       {/* Brand */}
       <div className="px-5 py-5 border-b border-white/5">
-        <span className="text-white font-bold text-lg tracking-tight">Cadre</span>
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center flex-shrink-0">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <rect x="1" y="1" width="5" height="5" rx="1" fill="white" fillOpacity="0.9"/>
+              <rect x="8" y="1" width="5" height="5" rx="1" fill="white" fillOpacity="0.5"/>
+              <rect x="1" y="8" width="5" height="5" rx="1" fill="white" fillOpacity="0.5"/>
+              <rect x="8" y="8" width="5" height="5" rx="1" fill="white" fillOpacity="0.9"/>
+            </svg>
+          </div>
+          <span className="text-white font-bold text-base tracking-tight">Cadre</span>
+        </div>
         {companyName && (
-          <p className="text-slate-400 text-xs mt-0.5 truncate">{companyName}</p>
+          <p className="text-slate-500 text-xs mt-2 truncate">{companyName}</p>
         )}
       </div>
 

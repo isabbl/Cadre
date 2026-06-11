@@ -96,7 +96,7 @@ export async function createTemplate(
     title: string;
     description: string;
     content: string;
-    variables: { name: string; type: string }[];
+    variables: { name: string; type: string; optional?: boolean }[];
   }
 ) {
   return addDoc(collection(db, "templates"), {
@@ -112,7 +112,7 @@ export async function updateTemplate(
     title: string;
     description: string;
     content: string;
-    variables: { name: string; type: string }[];
+    variables: { name: string; type: string; optional?: boolean }[];
   }
 ) {
   return updateDoc(doc(db, "templates", id), {
@@ -148,4 +148,8 @@ export async function createResponse(data: {
     ...data,
     createdAt: new Date().toISOString(),
   });
+}
+
+export async function deleteResponse(id: string) {
+  return deleteDoc(doc(db, "responses", id));
 }
