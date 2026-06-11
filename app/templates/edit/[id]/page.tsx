@@ -1,0 +1,238 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import ProtectedPage from "@/components/ProtectedPage";
+import TemplatePreview from "@/components/TemplatePreview";
+import { getTemplate, updateTemplate } from "@/lib/firestore";
+
+const TYPE_LABELS: Record<string, string> = {
+  texto: "Texto",
+  numero: "Número",
+  data: "Data",
+  moeda: "Moeda (R$)",
+};
+
+export default function EditTemplatePage() {
+  const params = useParams();
+  const id = String(params.id);
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [content, setContent] = useState("");
+  const [variables, setVariables] = useState<{ name: string; type: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const data = await getTemplate(id);
+        if (!data) { setNotFound(true); return; }
+        const t = data as any;
+        setTitle(t.title || "");
+        setDescription(t.description || "");
+        setContent(t.content || "");
+        setVariables(t.variables || []);
+      } catch {
+        setNotFound(true);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [id]);
+
+  function detectVariables() {
+    const matches = content.match(/{{(.*?)}}/g) || [];
+    const extracted = [...new Set(matches.map((m) => m.slice(2, -2).trim()))];
+    setVariables(
+      extracted.map((name) => variables.find((v) => v.name === name) ?? { name, type: "texto" })
+    );
+  }
+
+  function updateVariableType(index: number, type: string) {
+    setVariables((prev) => prev.map((v, i) => (i === index ? { ...v, type } : v)));
+  }
+
+  async function save() {
+    if (!title.trim()) { alert("Digite um título."); return; }
+    setSaving(true);
+    try {
+      await updateTemplate(id, { title, description, content, variables });
+      window.location.href = "/dashboard";
+    } catch {
+      alert("Erro ao salvar alterações.");
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <ProtectedPage>
+        <div className="px-8 py-8 flex items-center justify-center min-h-64">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <p className="text-slate-400 text-sm">Carregando template...</p>
+          </div>
+        </div>
+      </ProtectedPage>
+    );
+  }
+
+  if (notFound) {
+    return (
+      <ProtectedPage>
+        <div className="px-8 py-8 text-center py-24">
+          <p className="text-slate-500 font-medium">Template não encontrado.</p>
+          <Link href="/dashboard" className="text-blue-600 text-sm mt-2 inline-block hover:underline">
+            ← Voltar ao dashboard
+          </Link>
+        </div>
+      </ProtectedPage>
+    );
+  }
+
+  return (
+    <ProtectedPage>
+      {previewing && (
+        <TemplatePreview
+          title={title}
+          description={description}
+          variables={variables}
+          onClose={() => setPreviewing(false)}
+        />
+      )}
+      <div className="px-8 py-8 max-w-3xl">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-8">
+          <Link href="/dashboard" className="text-slate-400 hover:text-slate-600 text-sm font-medium">
+            ← Voltar
+          </Link>
+          <span className="text-slate-300">/</span>
+          <h1 className="text-xl font-bold text-slate-900">Editar template</h1>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          {/* Informações */}
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100">
+              <h2 className="text-sm font-semibold text-slate-700">Informações básicas</h2>
+            </div>
+            <div className="px-6 py-5 flex flex-col gap-4">
+              <div>
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1.5">
+                  Título do template
+                </label>
+                <input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1.5">
+                  Instrução para o cliente
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                  className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none transition"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Conteúdo */}
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-700">Conteúdo do documento</h2>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Use <code className="bg-slate-100 px-1 rounded">{"{{nome_variavel}}"}</code> para campos a preencher
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={detectVariables}
+                className="text-xs font-medium text-blue-600 hover:text-blue-800 border border-blue-200 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                Detectar variáveis
+              </button>
+            </div>
+            <div className="px-6 py-5">
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                rows={10}
+                className="w-full border border-slate-200 rounded-xl px-3.5 py-3 text-sm font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none transition"
+              />
+            </div>
+          </div>
+
+          {/* Variáveis */}
+          {variables.length > 0 && (
+            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-100">
+                <h2 className="text-sm font-semibold text-slate-700">
+                  Variáveis
+                  <span className="ml-2 bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full">
+                    {variables.length}
+                  </span>
+                </h2>
+              </div>
+              <div className="divide-y divide-slate-50">
+                {variables.map((v, i) => (
+                  <div key={i} className="flex items-center justify-between px-6 py-3.5">
+                    <div className="flex items-center gap-3">
+                      <span className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" />
+                      <code className="text-sm font-mono text-slate-700">{`{{${v.name}}}`}</code>
+                    </div>
+                    <select
+                      value={v.type}
+                      onChange={(e) => updateVariableType(i, e.target.value)}
+                      className="border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                      {Object.entries(TYPE_LABELS).map(([val, label]) => (
+                        <option key={val} value={val}>{label}</option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex items-center justify-between pt-2 pb-8">
+            <Link
+              href="/dashboard"
+              className="text-sm font-medium text-slate-500 hover:text-slate-700 border border-slate-200 px-5 py-2.5 rounded-xl hover:bg-slate-50 transition-colors"
+            >
+              Cancelar
+            </Link>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setPreviewing(true)}
+                className="text-sm font-medium text-slate-600 hover:text-slate-900 border border-slate-200 px-5 py-2.5 rounded-xl hover:bg-slate-50 transition-colors"
+              >
+                Pré-visualizar
+              </button>
+              <button
+                onClick={save}
+                disabled={saving}
+                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors shadow-sm"
+              >
+                {saving ? "Salvando..." : "Salvar alterações"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ProtectedPage>
+  );
+}
